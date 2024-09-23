@@ -2,6 +2,13 @@
 
 Simulate read truncations observed in ONT direct RNA and cDNA data.
 
+Requires R packages:
+- Biostrings
+- data.table
+- stats
+- optparse
+- dplyr
+    
 Run as:
 Rscript SimReadTruncs.R -f transcriptome.fasta -c read_counts.csv -l human -o truncated_reads.fasta
 
