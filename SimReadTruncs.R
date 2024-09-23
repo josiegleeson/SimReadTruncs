@@ -68,9 +68,9 @@ dirpath <- dirname(rstudioapi::getSourceEditorContext()$path)
 
 # import kde
 if (is.null(read_lengths) | read_lengths == "human") {
-  kde <- readRDS(file = paste0(dirpath, "/kde_human.rds"))
+  kde <- readRDS(file = paste0(dirpath, "read_length_kdes/kde_human.rds"))
 } else if (read_lengths == "sirv") {
-  kde <- readRDS(file = paste0(dirpath, "/kde_sirv.rds"))
+  kde <- readRDS(file = paste0(dirpath, "/read_length_kdes/kde_sirv.rds"))
 } else {
   length_data <- fread(read_lengths)
   length_data$nt_col <- length_data[,1] 
@@ -133,7 +133,3 @@ writeXStringSet(trunc_txs, paste0(output), append=FALSE,
                 compress=FALSE, compression_level=NA, format="fasta")
 
 message(paste0("Created ", output))
-
-# Next step:
-# badread simulate --reference sim.fa --quantity 1x --start_adapter_seq "" --end_adapter_seq "" --error_model nanopore2023 --junk 0 --random 0 --length 3000,2000 > sim_badread.fastq
-
