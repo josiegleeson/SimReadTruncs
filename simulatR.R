@@ -25,16 +25,8 @@ opt <- parse_args(opt_parser)
 # read in from command line
 txs <- opt$fasta
 count_input <- opt$counts_file
-read_lengths <- "~/Documents/drna_sim/custom_read_lengths.csv"
+reads_input <- opt$read_lengths
 output <- opt$output_file
-
-# txs <- "~/Documents/drna_sim/sirvs/sirv_transcriptome_c.fa"
-# count_input <- "~/Documents/drna_sim/sirvs/read_counts.tsv"
-# output <- "~/Documents/compare_drs_data/simulated/sirv_sim.fa"
-
-# txs <- "~/Documents/drna_sim/sirvs/sirv_transcriptome_c.fa"
-# count_input <- "~/Documents/drna_sim/sirv_counts.csv"
-# output <- "~/Documents/drna_sim/sirv_read_length/sirvs.fa"
 
 message("Importing data...")
 
@@ -50,7 +42,7 @@ counts <- counts %>% dplyr::filter(read_count > 0)
 # remove counts for transcripts not found in reference
 counts <- counts %>% dplyr::filter(transcript_id %in% names(tx_seqs))
 
-# arrange reference by counts file transcript_id
+# arrange reference by counts file transcript_ids
 tx_seqs <- tx_seqs[counts$transcript_id]
 
 # replicate transcript entry as per read_count
@@ -83,15 +75,17 @@ if (is.null(read_lengths) | read_lengths == "human") {
   length_data <- fread(read_lengths)
   length_data$nt_col <- length_data[,1] 
   length_data$nt_col <- as.numeric(length_data$nt_col)
-  kde <- density(length_data$nt_col, from=200, to=30000, na.rm = TRUE)
+  kde <- density(length_data$nt_col, from=200, to=50000, na.rm = TRUE)
 }
 
 # sample from kde
 sample_from_kde <- function(kde) {
-  # length
+  
+  # get length
   sample_read_length <- sample(kde$x, size = 1, prob = kde$y)
   
   return(sample_read_length)
+  
 }
 
 # remove nt from the 5' end of sequence
@@ -106,36 +100,40 @@ remove_kde_length <- function(seq) {
   random_3p_end <- sample(1:10, 1)
   
   if (simulated_read_length >= seq_length & seq_length > 50 & seq_length < 1000) {
+   
     # if nt to remove is more than sequence length (and length is <1k), return 20 nt truncation
     return(subseq(seq, start = 20, end = -abs(random_3p_end)))
+    
   } else if (simulated_read_length >= seq_length & seq_length > 1000) {
+    
     # if nt to remove is more than sequence length (and length is >1k), return 200 nt truncation
     return(subseq(seq, start = 200, end = -abs(random_3p_end)))
-  } else if (seq_length < 50) { 
+    
+  } else if (seq_length < 50) {
+    
     # no truncation
     return(seq)
+    
   } else { 
+    
     # remove kde based number of nt
     return(subseq(seq, start = -abs(simulated_read_length), end = -abs(random_3p_end)))
+    
   }
+  
 }
 
 message("Truncating reads...")
 
-# apply to DNAStringset
+# apply to DNAStringSet
 trunc_txs <- DNAStringSet(sapply(counts_txs, remove_kde_length))
 
 # write out FASTA
 writeXStringSet(trunc_txs, paste0(output), append=FALSE,
                 compress=FALSE, compression_level=NA, format="fasta")
 
-# messages
 message(paste0("Created ", output))
 
 # Next step:
 # badread simulate --reference sim.fa --quantity 1x --start_adapter_seq "" --end_adapter_seq "" --error_model nanopore2023 --junk 0 --random 0 --length 3000,2000 > sim_badread.fastq
-
-
-
-
 
