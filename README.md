@@ -8,6 +8,7 @@ Simulate read truncations observed in ONT direct RNA and cDNA data.
 - stats
 - optparse
 - dplyr
+- this.path
 
 ### Download:
 ```
@@ -19,12 +20,12 @@ git clone https://github.com/josiegleeson/SimReadTruncs.git
 Rscript SimReadTruncs.R -f transcriptome.fasta -c read_counts.csv -l human -o truncated_reads.fasta
 ```
 
-### Error model introduction with Badread:
+### Introduce errors with Badread:
 ```
-badread simulate --reference truncated_reads.fasta --quantity 1x --start_adapter_seq "" --end_adapter_seq "" --error_model nanopore2023 --junk 0 --random 0 --length 3000,2000 > truncated_w_errors_reads.fasta
+badread simulate --reference truncated_reads.fasta --quantity 1x --start_adapter_seq "" --end_adapter_seq "" --error_model nanopore2023 --junk 0 --random 0 --length 5000,5000 > truncated_w_errors_reads.fasta
 ```
 
-### Error model introduction with NanoSim:
+### Introduce errors with NanoSim:
 ```
-code
+example
 ```
