@@ -1,9 +1,9 @@
 # SimReadTruncs
 
-Simulate read truncations observed in ONT direct RNA and cDNA data.
+Simulate read truncations observed in ONT direct RNA (and cDNA) data.
 
 ### Dependencies (R):
-- Biostrings
+- Biostrings (Bioconductor)
 - data.table
 - stats
 - optparse
