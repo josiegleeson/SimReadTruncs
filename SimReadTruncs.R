@@ -77,11 +77,12 @@ if (is.null(read_input) | read_input == "human") {
   kde_long_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_long_read_length_sirv.rds"))
   message("Using provided sirv read length model")
 } else {
-  custom_data <- fread(read_input)
-  length_data$nt_col <- length_data[,1]
-  length_data$nt_col <- as.numeric(length_data$nt_col)
+  message("Custom KDEs not yet supported., please choose either 'human' or 'sirv'.")
+  #custom_data <- fread(read_input)
+  #length_data$nt_col <- length_data[,1]
+  #length_data$nt_col <- as.numeric(length_data$nt_col)
   
-  kde_read_length <- density(length_data$nt_col, from=200, to=20000, na.rm = TRUE)
+  #kde_read_length <- density(length_data$nt_col, from=200, to=20000, na.rm = TRUE)
 }
 
 # function to sample from kde
