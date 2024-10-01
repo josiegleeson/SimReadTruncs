@@ -29,6 +29,10 @@ count_input <- opt$counts_file
 read_input <- opt$read_lengths
 output <- opt$output_file
 
+# txs <- "~/Documents/simulate_read_truncations/gencode.v42.transcripts.renamed.fa"
+# count_input <- "~/Documents/simulate_read_truncations/i1_cbm_read_counts.csv"
+# output <- "~/Documents/simulate_read_truncations/fastas/human_v4.fasta"
+
 message("Importing data...")
 
 # read in counts
@@ -65,12 +69,12 @@ names(counts_txs) <- unique_ids
 
 # set script dir
 dirpath <- dirname(this.path())
-kde_3p <- readRDS(file = paste0(dirpath, "/kde_data/kde_3_prime_end.rds"))
+kde_3p <- readRDS(file = paste0(dirpath, "/kde_data/kde_3_prime_end_uhr.rds"))
 
 # import kde
 if (is.null(read_input) | read_input == "human") {
-  kde_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_read_length_human_brain.rds"))
-  kde_long_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_long_read_length_human_brain.rds"))
+  kde_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_read_length_uhr.rds"))
+  kde_long_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_long_read_length_uhr.rds"))
   message("Using provided human read length model")
 } else if (read_input == "sirv") {
   kde_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_read_length_sirv.rds"))
@@ -78,6 +82,7 @@ if (is.null(read_input) | read_input == "human") {
   message("Using provided sirv read length model")
 } else {
   message("Custom KDEs not yet supported., please choose either 'human' or 'sirv'.")
+  break()
   #custom_data <- fread(read_input)
   #length_data$nt_col <- length_data[,1]
   #length_data$nt_col <- as.numeric(length_data$nt_col)
@@ -101,14 +106,14 @@ remove_kde_length <- function(seq, max_attempts = 10) {
   seq_length <- nchar(seq)
   
   # to add: 5% of the time, no truncation occurs
-  random_number <- sample(1:20, 1)
-
-  if (random_number == 10 & seq_length < 20000) {
-    
-    # no truncation
-    return(seq)
-    
-  } else {
+  # random_number <- sample(1:40, 1)
+  # 
+  # if (random_number == 10 & seq_length < 10000) {
+  #   
+  #   # no truncation
+  #   return(seq)
+  #   
+  # } else {
     
     # determine which kde to use
     if (seq_length > 3000) {
@@ -152,7 +157,7 @@ remove_kde_length <- function(seq, max_attempts = 10) {
     
     # return truncated read
     return(subseq(seq, start = start, end = end))
-  }
+  #}
   
 }
 
@@ -160,7 +165,7 @@ message("Truncating reads...")
 
 # apply to DNAStringSet
 trunc_txs <- DNAStringSet(sapply(counts_txs, remove_kde_length))
-
+output <- "~/Documents/simulate_read_truncations/fastas/human_v5.fasta"
 # write out FASTA
 writeXStringSet(trunc_txs, paste0(output), append=FALSE,
                 compress=FALSE, compression_level=NA, format="fasta")
