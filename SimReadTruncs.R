@@ -165,7 +165,7 @@ message("Truncating reads...")
 
 # apply to DNAStringSet
 trunc_txs <- DNAStringSet(sapply(counts_txs, remove_kde_length))
-output <- "~/Documents/simulate_read_truncations/fastas/human_v5.fasta"
+
 # write out FASTA
 writeXStringSet(trunc_txs, paste0(output), append=FALSE,
                 compress=FALSE, compression_level=NA, format="fasta")
