@@ -19,6 +19,24 @@ git clone https://github.com/josiegleeson/SimReadTruncs.git
 
 #### Usage:
 ```
+Rscript SimReadTruncs.R --help
+Usage: SimReadTruncs.R [options]
+Options:
+        -f CHARACTER, --fasta=CHARACTER
+                Transcriptome reference FASTA
+
+        -c CHARACTER, --counts_file=CHARACTER
+                Read count file (txt, tsv or csv). Header must be: transcript_id, read_count
+
+        -l CHARACTER, --read_lengths=CHARACTER
+                Read length KDE option (sirv, human) or file (txt, tsv or csv). Header must be: lengths. Leave blank for default (human).
+
+        -o CHARACTER, --output_file=CHARACTER
+                Output FASTA file (output.fasta)
+
+        -h, --help
+                Show this help message and exit
+
 # run on provided SIRV data
 Rscript SimReadTruncs.R -f sirv_data/sirv_transcriptome_c.fa -c sirv_data/sirv_counts.csv -l sirv -o truncated_sirv_reads.fasta
 

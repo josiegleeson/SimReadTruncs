@@ -15,7 +15,7 @@ option_list = list(
   make_option(c("-c", "--counts_file"), type="character", default=NULL,
               help="Read count file (txt, tsv or csv). Header must be: transcript_id, read_count", metavar="character"),
   make_option(c("-l", "--read_lengths"), type="character", default="human",
-              help="Read lengths option (sirv, human) or file (txt, tsv or csv). Header must be: lengths. Leave blank for human.", metavar="character"),
+              help="Read length KDE option (sirv, human) or file (txt, tsv or csv). Header must be: lengths. Leave blank for default (human).", metavar="character"),
   make_option(c("-o", "--output_file"), type="character", default="output.fasta",
               help="Output FASTA file (output.fasta)", metavar="character")
 )
@@ -99,61 +99,50 @@ remove_kde_length <- function(seq, max_attempts = 10) {
   # get tx length
   seq_length <- nchar(seq)
   
-  # to add: 5% of the time, no truncation occurs
-  # random_number <- sample(1:40, 1)
-  # 
-  # if (random_number == 10 & seq_length < 10000) {
-  #   
-  #   # no truncation
-  #   return(seq)
-  #   
-  # } else {
+  # determine which kde to use
+  if (seq_length > 3000 & read_input == "human") {
+    kde_to_sample_from <- kde_long_read_length
+  } else if (seq_length > 1100 & read_input == "sirv") {
+    kde_to_sample_from <- kde_long_read_length
+  } else {
+    kde_to_sample_from <- kde_read_length
+  }
+  
+  # sample from kde until read length is less than tx length
+  attempts <- 0
+  repeat {
+    # sample from read length kde defined above
+    simulated_read_length <- floor(sample_from_kde(kde_to_sample_from))
+    attempts <- attempts + 1
+    if (simulated_read_length < seq_length | attempts >= max_attempts) break
+  }
     
-    # determine which kde to use
-    if (seq_length > 3000 & read_input == "human") {
-      kde_to_sample_from <- kde_long_read_length
-    } else if (seq_length > 1100 & read_input == "sirv") {
-      kde_to_sample_from <- kde_long_read_length
-    } else {
-      kde_to_sample_from <- kde_read_length
-    }
+  # if no valid length after max_attempts, use seq_length - 10
+  if (attempts >= max_attempts) {
+    simulated_read_length <- seq_length - 10
+  }
     
-    # sample from kde until read length is less than tx length
-    attempts <- 0
-    repeat {
-      # sample from read length kde defined above
-      simulated_read_length <- floor(sample_from_kde(kde_to_sample_from))
-      attempts <- attempts + 1
-      if (simulated_read_length < seq_length | attempts >= max_attempts) break
-    }
+  # ensure simulated_read_length is at least 1
+  simulated_read_length <- max(1, simulated_read_length)
+  
+  # generate 3' end truncation
+  simulated_3p_truncation <- floor(sample_from_kde(kde_3p))
+  
+  # ensure simulated_3p_truncation is not larger than the sequence length
+  simulated_3p_truncation <- min(simulated_3p_truncation, seq_length - 1)
+  
+  # get read start and end positions
+  start <- max(1, seq_length - simulated_read_length + 1)
+  end <- max(start, seq_length - simulated_3p_truncation)  # ensure end is not less than start
+  
+  # final check to ensure start <= end <= seq_length
+  if (start > end | end > seq_length) {
+    # if coords are still invalid return the full sequence
+    return(seq)
+  }
     
-    # if no valid length after max_attempts, use seq_length - 10
-    if (attempts >= max_attempts) {
-      simulated_read_length <- seq_length - 10
-    }
-    
-    # ensure simulated_read_length is at least 1
-    simulated_read_length <- max(1, simulated_read_length)
-    
-    # generate 3' end truncation
-    simulated_3p_truncation <- floor(sample_from_kde(kde_3p))
-    
-    # ensure simulated_3p_truncation is not larger than the sequence length
-    simulated_3p_truncation <- min(simulated_3p_truncation, seq_length - 1)
-    
-    # get read start and end positions
-    start <- max(1, seq_length - simulated_read_length + 1)
-    end <- max(start, seq_length - simulated_3p_truncation)  # ensure end is not less than start
-    
-    # final check to ensure start <= end <= seq_length
-    if (start > end | end > seq_length) {
-      # if coords are still invalid return the full sequence
-      return(seq)
-    }
-    
-    # return truncated read
-    return(subseq(seq, start = start, end = end))
-  #}
+  # return truncated read
+  return(subseq(seq, start = start, end = end))
   
 }
 
