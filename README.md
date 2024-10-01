@@ -22,7 +22,7 @@ git clone https://github.com/josiegleeson/SimReadTruncs.git
 # run on provided SIRV data
 Rscript SimReadTruncs.R -f sirv_data/sirv_transcriptome_c.fa -c sirv_data/sirv_counts.csv -l sirv -o truncated_sirv_reads.fasta
 
-# use custom counts for human data
+# run on custom counts for human data
 Rscript SimReadTruncs.R -f ref_transcriptome.fa -c read_counts.csv -l human -o truncated_reads.fasta
 ```
 Note that the 'kde_data' folder must be in the same directory as the Rscript.
