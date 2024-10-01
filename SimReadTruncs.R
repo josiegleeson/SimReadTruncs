@@ -29,10 +29,6 @@ count_input <- opt$counts_file
 read_input <- opt$read_lengths
 output <- opt$output_file
 
-# txs <- "~/Documents/simulate_read_truncations/gencode.v42.transcripts.renamed.fa"
-# count_input <- "~/Documents/simulate_read_truncations/i1_cbm_read_counts.csv"
-# output <- "~/Documents/simulate_read_truncations/fastas/human_v4.fasta"
-
 message("Importing data...")
 
 # read in counts
@@ -64,21 +60,19 @@ unique_ids <- unlist(lapply(1:length(original_names), function(i) {
 # set the unique ids as names
 names(counts_txs) <- unique_ids
 
-# kde <- density(bamslam$read_length, from=200, to=20000, na.rm = TRUE)
-# saveRDS(kde, file="~/Documents/drna_sim/kde_sirv.rds")
-
 # set script dir
 dirpath <- dirname(this.path())
-kde_3p <- readRDS(file = paste0(dirpath, "/kde_data/kde_3_prime_end_uhr.rds"))
 
 # import kde
 if (is.null(read_input) | read_input == "human") {
   kde_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_read_length_uhr.rds"))
   kde_long_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_long_read_length_uhr.rds"))
+  kde_3p <- readRDS(file = paste0(dirpath, "/kde_data/kde_3_prime_end_uhr.rds"))
   message("Using provided human read length model")
 } else if (read_input == "sirv") {
   kde_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_read_length_sirv.rds"))
   kde_long_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_long_read_length_sirv.rds"))
+  kde_3p <- readRDS(file = paste0(dirpath, "/kde_data/kde_3_prime_end_sirv.rds"))
   message("Using provided sirv read length model")
 } else {
   message("Custom KDEs not yet supported., please choose either 'human' or 'sirv'.")
@@ -116,7 +110,9 @@ remove_kde_length <- function(seq, max_attempts = 10) {
   # } else {
     
     # determine which kde to use
-    if (seq_length > 3000) {
+    if (seq_length > 3000 & read_input == "human") {
+      kde_to_sample_from <- kde_long_read_length
+    } else if (seq_length > 1100 & read_input == "sirv") {
       kde_to_sample_from <- kde_long_read_length
     } else {
       kde_to_sample_from <- kde_read_length
