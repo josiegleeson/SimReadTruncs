@@ -8,7 +8,7 @@ suppressWarnings({
     library(this.path)
   })
 })
-  
+
 option_list = list(
   make_option(c("-f", "--fasta"), type="character", default=NULL,
               help="Transcriptome reference FASTA", metavar="character"),
