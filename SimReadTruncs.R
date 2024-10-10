@@ -29,15 +29,6 @@ count_input <- opt$counts_file
 read_input <- opt$read_lengths
 output <- opt$output_file
 
-txs <- "~/Documents/simulate_read_truncations/gencode.v42.transcripts.renamed.fa"
-count_input <- "~/Documents/simulate_read_truncations/uhr_human_reference_counts.csv"
-read_input <- "human"
-output <- "~/Documents/simulate_read_truncations/fastas/uhr_canonical.fasta"
-
-txs <- "~/Documents/simulate_read_truncations/sirv_transcriptome_c.fa"
-count_input <- "~/Documents/SimReadTruncs/sirv_data/sirv_counts.csv"
-output <- "~/Documents/simulate_read_truncations/fastas/sirv_oct2.fasta"
-
 message("Importing data...")
 
 # read in counts
@@ -69,20 +60,26 @@ unique_ids <- unlist(lapply(1:length(original_names), function(i) {
 # set the unique ids as names
 names(counts_txs) <- unique_ids
 
-# temp
-# -----------
-bamslam <- fread("~/Documents/simulate_read_truncations/sirvs.csv")
-
-real <- data.frame(txlen = bamslam$transcript_length,
-                   readlen = bamslam$read_length)
-
-sirv_real_data <- real %>% dplyr::filter(txlen+50 >= readlen)
-# -----------
-
-
 # fit lm
 # import lm 
-lm_read_lengths <- lm(readlen ~ txlen, data = sirv_real_data)
+#lm_read_lengths <- lm(readlen ~ txlen, data = uhr_real_data)
+
+# import lm and kde
+# set script dir
+dirpath <- dirname(this.path())
+
+if (is.null(read_input) | read_input == "human") {
+  lm_read_lengths <- readRDS(file = paste0(dirpath, "/kde_data/human_lm.rds"))
+  kde_3p <- readRDS(file = paste0(dirpath, "/kde_data/kde_3_prime_end_uhr.rds"))
+  message("Using provided human read length model")
+} else if (read_input == "sirv") {
+  lm_read_lengths <- readRDS(file = paste0(dirpath, "/kde_data/sirv_lm.rds"))
+  kde_3p <- readRDS(file = paste0(dirpath, "/kde_data/kde_3_prime_end_sirv.rds"))
+  message("Using provided sirv read length model")
+} else {
+  message("Custom models not yet supported., please choose either 'human' or 'sirv'.")
+  break()
+}
 
 original_tx_length_data <- data.frame(txlen = width(counts_txs))
 
@@ -94,9 +91,12 @@ expected_length <- predict(lm_read_lengths, original_tx_length_data)
 kde_residuals <- density(residuals(lm_read_lengths))
 sampled_residuals <- sample(kde_residuals$x, size = length(counts_txs), prob = kde_residuals$y, replace = TRUE)
 
+sampled_3p_ends <- sample(kde_3p$x, size = length(counts_txs), prob = kde_3p$y, replace = TRUE)
+
 # simulated read lengths df
-simulated_lengths_df <- data.frame(txlen = original_tx_length_data$txlen, 
-                                   simulated_read_lengths = as.integer(expected_length + sampled_residuals))
+simulated_lengths_df <- data.frame(txlen = original_tx_length_data$txlen,
+                                   simulated_read_lengths = as.integer(expected_length + sampled_residuals),
+                                   simulated_3p_ends = as.integer(sampled_3p_ends))
 
 # update simulated length to handle neg values and reads longer than original tx length
 simulated_lengths_df <- simulated_lengths_df %>%
@@ -107,6 +107,7 @@ simulated_lengths_df <- simulated_lengths_df %>%
   ))
 
 simulated_read_lengths_int <- as.vector(simulated_lengths_df$updated_simulated_read_lengths)
+simulated_3p_ends_int <- as.vector(simulated_lengths_df$simulated_3p_ends)
 
 # rename for testing
 reads_input <- counts_txs
@@ -120,18 +121,16 @@ pb <- txtProgressBar(min = 0, max = length(reads_input), style = 3)
 for (i in seq_along(reads_input)) {
   
   seq <- reads_input[i]
-  
-  # ensure a read is at least 50nt long
-  sim_length <- max(simulated_read_lengths_int[i], 50)
-  
   # get original transcript length
   seq_length <- width(seq)
   
-  # get start position for read truncation
-  start <- max(1, seq_length - sim_length + 1)
+  # ensure a read is at least 50nt long
+  sim_length <- max(simulated_read_lengths_int[i], 50)
+  sim_3p_end <- min(simulated_3p_ends_int[i], seq_length - 1)
   
-  # get end and ensure end is not less than start
-  end <- min(seq_length, start + sim_length - 1)  
+  # get start and end position for read truncation
+  start <- max(1, seq_length - sim_length + 1)
+  end <- max(start, seq_length - sim_3p_end)
   
   # final check to ensure valid coordinates
   if (start > end || end > seq_length) {
