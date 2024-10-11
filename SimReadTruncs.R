@@ -101,8 +101,8 @@ simulated_lengths_df <- data.frame(txlen = original_tx_length_data$txlen,
 # update simulated length to handle neg values and reads longer than original tx length
 simulated_lengths_df <- simulated_lengths_df %>%
   mutate(updated_simulated_read_lengths = case_when(
-    simulated_read_lengths > txlen ~ txlen,
-    simulated_read_lengths < 0 ~ txlen,
+    simulated_read_lengths > txlen ~ txlen - 20,
+    simulated_read_lengths < 0 ~ txlen - 20,
     TRUE ~ simulated_read_lengths
   ))
 
