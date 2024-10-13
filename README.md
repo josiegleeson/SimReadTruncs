@@ -29,7 +29,7 @@ Options:
                 Read count file (txt, tsv or csv). Header must be: transcript_id, read_count
 
         -l CHARACTER, --read_lengths=CHARACTER
-                Read length KDE option (sirv, human) or file (txt, tsv or csv). Header must be: lengths. Leave blank for default (human).
+                Read lengths option (sirv, human). Leave blank for default (human).
 
         -o CHARACTER, --output_file=CHARACTER
                 Output FASTA file (output.fasta)
