@@ -69,12 +69,12 @@ names(counts_txs) <- unique_ids
 dirpath <- dirname(this.path())
 
 if (is.null(read_input) | read_input == "human") {
-  lm_read_lengths <- readRDS(file = paste0(dirpath, "/kde_data/human_lm.rds"))
-  kde_3p <- readRDS(file = paste0(dirpath, "/kde_data/kde_3_prime_end_uhr.rds"))
+  lm_read_lengths <- readRDS(file = paste0(dirpath, "/models/human_lm.rds"))
+  kde_3p <- readRDS(file = paste0(dirpath, "/models/kde_3_prime_end_uhr.rds"))
   message("Using provided human read length model")
 } else if (read_input == "sirv") {
-  lm_read_lengths <- readRDS(file = paste0(dirpath, "/kde_data/sirv_lm.rds"))
-  kde_3p <- readRDS(file = paste0(dirpath, "/kde_data/kde_3_prime_end_sirv.rds"))
+  lm_read_lengths <- readRDS(file = paste0(dirpath, "/models/sirv_lm.rds"))
+  kde_3p <- readRDS(file = paste0(dirpath, "/models/kde_3_prime_end_sirv.rds"))
   message("Using provided sirv read length model")
 } else {
   message("Custom models not yet supported., please choose either 'human' or 'sirv'.")
