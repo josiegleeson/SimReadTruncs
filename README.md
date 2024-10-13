@@ -1,8 +1,8 @@
 # SimReadTruncs
 
-### Simulate read truncations observed in ONT direct RNA sequencing data (PCR-cDNA under dev).
+### Simulate read truncations observed in ONT direct RNA sequencing data.
 
-This Rscript simulates read truncations characteristic of Oxford Nanopore direct RNA sequencing data. It generates reads with transcript coverage distributions similar to real reads by utilising kernel density estimates to model the lengths and 3' end sites of simulated reads.
+This Rscript simulates read truncations characteristic of Oxford Nanopore direct RNA sequencing data. It generates reads with transcript coverage distributions similar to real reads by utilising a linear regression and kernel density estimates to model the lengths and 3' end sites of simulated reads.
 
 #### Dependencies (R):
 - Biostrings (Bioconductor)
@@ -43,11 +43,14 @@ Rscript SimReadTruncs.R -f sirv_data/sirv_transcriptome_c.fa -c sirv_data/sirv_c
 # run on custom counts for human data
 Rscript SimReadTruncs.R -f ref_transcriptome.fa -c read_counts.csv -l human -o truncated_reads.fasta
 ```
-Note that the 'kde_data' folder must be in the same directory as the Rscript.
+Note that the 'models' folder must be in the same directory as the Rscript.
 
 
 #### Introduce errors with Badread:
 ```
+# Using the custom model provided (trained on RNA004 SIRVs):
+badread simulate --reference truncated_reads.fasta --quantity 1x --start_adapter_seq "" --end_adapter_seq "" --error_model models/rna004_error_model --junk 0 --random 0 --length 10000,10000 > truncated_w_errors_reads.fastq
+# Using Badread's ONT model:
 badread simulate --reference truncated_reads.fasta --quantity 1x --start_adapter_seq "" --end_adapter_seq "" --error_model nanopore2023 --junk 0 --random 0 --length 10000,10000 > truncated_w_errors_reads.fastq
 ```
 
