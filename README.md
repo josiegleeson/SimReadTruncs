@@ -38,7 +38,7 @@ Options:
                 Show this help message and exit
 
 # run on provided SIRV data
-Rscript SimReadTruncs.R -f sirv_data/sirv_transcriptome_c.fa -c sirv_data/sirv_counts.csv -l sirv -o truncated_sirv_reads.fasta
+Rscript SimReadTruncs.R -f sirv_data/sirv_transcriptome_c.fa -c sirv_data/sirv_counts_27k_reads.csv -l sirv -o truncated_sirv_reads.fasta
 
 # run on custom counts for human data
 Rscript SimReadTruncs.R -f ref_transcriptome.fa -c read_counts.csv -l human -o truncated_reads.fasta
