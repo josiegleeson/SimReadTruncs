@@ -15,7 +15,7 @@ option_list = list(
   make_option(c("-c", "--counts_file"), type="character", default=NULL,
               help="Read count file (txt, tsv or csv). Header must be: transcript_id, read_count", metavar="character"),
   make_option(c("-l", "--read_lengths"), type="character", default="human",
-              help="Read length KDE option (sirv, human) or file (txt, tsv or csv). Header must be: lengths. Leave blank for default (human).", metavar="character"),
+              help="Read lengths option (sirv, human) or file (txt, tsv or csv). Header must be: lengths. Leave blank for human.", metavar="character"),
   make_option(c("-o", "--output_file"), type="character", default="output.fasta",
               help="Output FASTA file (output.fasta)", metavar="character")
 )
@@ -60,100 +60,101 @@ unique_ids <- unlist(lapply(1:length(original_names), function(i) {
 # set the unique ids as names
 names(counts_txs) <- unique_ids
 
+# fit lm
+# import lm 
+#lm_read_lengths <- lm(readlen ~ txlen, data = uhr_real_data)
+
+# import lm and kde
 # set script dir
 dirpath <- dirname(this.path())
 
-# import kde
 if (is.null(read_input) | read_input == "human") {
-  kde_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_read_length_uhr.rds"))
-  kde_long_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_long_read_length_uhr.rds"))
+  lm_read_lengths <- readRDS(file = paste0(dirpath, "/kde_data/human_lm.rds"))
   kde_3p <- readRDS(file = paste0(dirpath, "/kde_data/kde_3_prime_end_uhr.rds"))
   message("Using provided human read length model")
 } else if (read_input == "sirv") {
-  kde_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_read_length_sirv.rds"))
-  kde_long_read_length <- readRDS(file = paste0(dirpath, "/kde_data/kde_long_read_length_sirv.rds"))
+  lm_read_lengths <- readRDS(file = paste0(dirpath, "/kde_data/sirv_lm.rds"))
   kde_3p <- readRDS(file = paste0(dirpath, "/kde_data/kde_3_prime_end_sirv.rds"))
   message("Using provided sirv read length model")
 } else {
-  message("Custom KDEs not yet supported., please choose either 'human' or 'sirv'.")
+  message("Custom models not yet supported., please choose either 'human' or 'sirv'.")
   break()
-  #custom_data <- fread(read_input)
-  #length_data$nt_col <- length_data[,1]
-  #length_data$nt_col <- as.numeric(length_data$nt_col)
-  
-  #kde_read_length <- density(length_data$nt_col, from=200, to=20000, na.rm = TRUE)
 }
 
-# function to sample from kde
-sample_from_kde <- function(kde) {
-  
-  # get length
-  sample_length <- sample(kde$x, size = 1, prob = kde$y)
-  return(sample_length)
-  
-}
+original_tx_length_data <- data.frame(txlen = width(counts_txs))
 
-# function to remove nt from the 5' end of sequence
-remove_kde_length <- function(seq, max_attempts = 10) {
+# predict expected read length for each transcript
+expected_length <- predict(lm_read_lengths, original_tx_length_data)
+
+# sample residuals from the KDE
+# import lm resid kde
+kde_residuals <- density(residuals(lm_read_lengths))
+sampled_residuals <- sample(kde_residuals$x, size = length(counts_txs), prob = kde_residuals$y, replace = TRUE)
+
+sampled_3p_ends <- sample(kde_3p$x, size = length(counts_txs), prob = kde_3p$y, replace = TRUE)
+
+# simulated read lengths df
+simulated_lengths_df <- data.frame(txlen = original_tx_length_data$txlen,
+                                   simulated_read_lengths = as.integer(expected_length + sampled_residuals),
+                                   simulated_3p_ends = as.integer(sampled_3p_ends))
+
+# update simulated length to handle neg values and reads longer than original tx length
+simulated_lengths_df <- simulated_lengths_df %>%
+  mutate(updated_simulated_read_lengths = case_when(
+    simulated_read_lengths > txlen ~ txlen - 20,
+    simulated_read_lengths < 0 ~ txlen - 20,
+    TRUE ~ simulated_read_lengths
+  ))
+
+simulated_read_lengths_int <- as.vector(simulated_lengths_df$updated_simulated_read_lengths)
+simulated_3p_ends_int <- as.vector(simulated_lengths_df$simulated_3p_ends)
+
+# rename for testing
+reads_input <- counts_txs
+
+# empty list to populate
+truncated_reads <- vector("list", length(reads_input))
+
+# create progress bar
+pb <- txtProgressBar(min = 0, max = length(reads_input), style = 3)
+
+for (i in seq_along(reads_input)) {
   
-  # get tx length
-  seq_length <- nchar(seq)
+  seq <- reads_input[i]
+  # get original transcript length
+  seq_length <- width(seq)
   
-  # determine which kde to use
-  if (seq_length > 3000 & read_input == "human") {
-    kde_to_sample_from <- kde_long_read_length
-  } else if (seq_length > 1100 & read_input == "sirv") {
-    kde_to_sample_from <- kde_long_read_length
+  # ensure a read is at least 50nt long
+  sim_length <- max(simulated_read_lengths_int[i], 50)
+  sim_3p_end <- min(simulated_3p_ends_int[i], seq_length - 1)
+  
+  # get start and end position for read truncation
+  start <- max(1, seq_length - sim_length + 1)
+  end <- max(start, seq_length - sim_3p_end)
+  
+  # final check to ensure valid coordinates
+  if (start > end || end > seq_length) {
+    truncated_reads[[i]] <- seq  # return full sequence if invalid
   } else {
-    kde_to_sample_from <- kde_read_length
+    # return the truncated sequence
+    truncated_reads[[i]] <- subseq(seq, start = start, end = end)
   }
   
-  # sample from kde until read length is less than tx length
-  attempts <- 0
-  repeat {
-    # sample from read length kde defined above
-    simulated_read_length <- floor(sample_from_kde(kde_to_sample_from))
-    attempts <- attempts + 1
-    if (simulated_read_length < seq_length | attempts >= max_attempts) break
-  }
-    
-  # if no valid length after max_attempts, use seq_length - 10
-  if (attempts >= max_attempts) {
-    simulated_read_length <- seq_length - 10
-  }
-    
-  # ensure simulated_read_length is at least 1
-  simulated_read_length <- max(1, simulated_read_length)
-  
-  # generate 3' end truncation
-  simulated_3p_truncation <- floor(sample_from_kde(kde_3p))
-  
-  # ensure simulated_3p_truncation is not larger than the sequence length
-  simulated_3p_truncation <- min(simulated_3p_truncation, seq_length - 1)
-  
-  # get read start and end positions
-  start <- max(1, seq_length - simulated_read_length + 1)
-  end <- max(start, seq_length - simulated_3p_truncation)  # ensure end is not less than start
-  
-  # final check to ensure start <= end <= seq_length
-  if (start > end | end > seq_length) {
-    # if coords are still invalid return the full sequence
-    return(seq)
-  }
-    
-  # return truncated read
-  return(subseq(seq, start = start, end = end))
+  # update progress bar
+  setTxtProgressBar(pb, i)
   
 }
 
-message("Truncating reads...")
+close(pb)
 
-# apply to DNAStringSet
-trunc_txs <- DNAStringSet(sapply(counts_txs, remove_kde_length))
+# ensure there are no names in list
+names(truncated_reads) <- NULL
+
+# convert to one DNAStringSet object
+truncated_reads_stringset <- do.call(c, truncated_reads)
 
 # write out FASTA
-writeXStringSet(trunc_txs, paste0(output), append=FALSE,
-                compress=FALSE, compression_level=NA, format="fasta")
+writeXStringSet(truncated_reads_stringset, paste0(output), append=FALSE, compress=FALSE, compression_level=NA, format="fasta")
 
 message(paste0("Created ", output))
 
