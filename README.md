@@ -48,7 +48,7 @@ Note that the 'models' folder must be in the same directory as the Rscript.
 
 #### Introduce errors with Badread:
 ```
-# Using the custom model provided (trained on RNA004 SIRVs):
+# Using the custom model provided in this repo (trained on RNA004 SIRVs):
 badread simulate --reference truncated_reads.fasta --quantity 1x --start_adapter_seq "" --end_adapter_seq "" --error_model models/rna004_error_model --junk 0 --random 0 --length 10000,10000 > truncated_w_errors_reads.fastq
 # Using Badread's ONT model:
 badread simulate --reference truncated_reads.fasta --quantity 1x --start_adapter_seq "" --end_adapter_seq "" --error_model nanopore2023 --junk 0 --random 0 --length 10000,10000 > truncated_w_errors_reads.fastq
@@ -56,7 +56,7 @@ badread simulate --reference truncated_reads.fasta --quantity 1x --start_adapter
 
 #### Introduce errors with NanoSim (not tested):
 ```
-
+# Using the pre-trained model provided with NanoSim
 simulator.py transcriptome -rt truncated_reads.fasta --model_prefix pre-trained_models/human_NA12878_dRNA_Bham1_guppy/training -o truncated_w_errors_reads
 ```
 
