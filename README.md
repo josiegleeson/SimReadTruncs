@@ -1,4 +1,4 @@
-# SimReadTruncs
+# DRSim
 
 ### Simulate read truncations observed in ONT direct RNA sequencing data.
 
@@ -14,13 +14,13 @@ This Rscript simulates read truncations characteristic of Oxford Nanopore direct
 
 #### Download:
 ```
-git clone https://github.com/josiegleeson/SimReadTruncs.git
+git clone https://github.com/josiegleeson/DRSim.git
 ```
 
 #### Usage:
 ```
-Rscript SimReadTruncs.R --help
-Usage: SimReadTruncs.R [options]
+Rscript DRSim.R --help
+Usage: DRSim.R [options]
 Options:
         -f CHARACTER, --fasta=CHARACTER
                 Transcriptome reference FASTA
@@ -38,10 +38,10 @@ Options:
                 Show this help message and exit
 
 # run on provided SIRV data
-Rscript SimReadTruncs.R -f sirv_data/sirv_transcriptome_c.fa -c sirv_data/sirv_counts_27k_reads.csv -l sirv -o truncated_sirv_reads.fasta
+Rscript DRSim.R -f sirv_data/sirv_transcriptome_c.fa -c sirv_data/sirv_counts_27k_reads.csv -l sirv -o truncated_sirv_reads.fasta
 
 # run on custom counts for human data
-Rscript SimReadTruncs.R -f ref_transcriptome.fa -c read_counts.csv -l human -o truncated_reads.fasta
+Rscript DRSim.R -f ref_transcriptome.fa -c read_counts.csv -l human -o truncated_reads.fasta
 ```
 Note that the 'models' folder must be in the same directory as the Rscript.
 
